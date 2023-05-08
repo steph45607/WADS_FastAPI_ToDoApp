@@ -4,29 +4,6 @@ from typing import Optional
 from pydantic import BaseModel
 
 app = FastAPI()
-
-# ENDPOINT: domain/student/1
-# GET
-# POST
-# PUT
-# DELETE
-
-# {
-#     uid:{
-#         "completed":True,
-#         "created":March 15, 2023 at 11:45:28 PM UTC+7,
-#         "description":"Message here",
-#         "title":"Task"
-#     },
-#     uid:{
-#         "completed":True,
-#         "created":March 15, 2023 at 11:45:28 PM UTC+7,
-#         "description":"Message here",
-#         "title":"Task"
-#     }
-# }
-
-
 tasks = {
     "6Y0To1VcSSfBOfrS4beL":{
         "completed":True,
@@ -42,8 +19,6 @@ tasks = {
     }
 }
 
-
-
 @app.get("/")
 def index():
     return {"Message":"Welcome to Stephanie's To Do App"}
@@ -52,7 +27,9 @@ def index():
 # get the task based on the uid
 @app.get("/get-task/{uid}")
 def get_student(uid : str = Path(desciption = "uid")):
-    return tasks[uid]
+    if uid in tasks:
+        return tasks[uid]
+    return {"Error":"Task title not found"}
 
 # domain/get-task-by-title?title=task
 # get the task based on the title
@@ -63,54 +40,60 @@ def get_task_by_title(*, title: Optional[str] = None):
             return tasks[uid]
     return {"Error":"Task title not found"}
 
+@app.get("/list-tasks")
+def list_task():
+    return tasks
+
+
 class Task(BaseModel):
     completed: bool
     description: str
     title:str
 
 class UpdatedTask(BaseModel):
-    completed: bool
-    description: str
-    title:str
+    completed: Optional[bool] = None
+    description: Optional[str] = None
+    title: Optional[str] = None
 
 # post method
 # add new task
 @app.post("/create-task/{uid}")
 def add_task_id(uid:str, task:Task):
     if uid in tasks:
-        return{"Error":"Task uid exists"}
+        return{"Error":"Task uid already exists"}
     tasks[uid]= task
     return tasks[uid]
 
+
 # put method
 # update task
-# @app.put("/update-task/{uid}")
-# def update_task(uid:str, task:UpdatedTask):
-#     if uid not in tasks:
-#         return {"Error":"Student doesn't exists"}
-#     if tasks[uid].completed != None:
-#         tasks[uid].completed = task.completed
-#         # return task.completed
-
-#     if tasks[uid].description != None:
-#         tasks[uid].description = task.description
-#         # return task.description
-
-#     if tasks[uid].title != None:
-#         tasks[uid].title = task.title
-#         # return task.title
+@app.put("/update-task/{uid}")
+def update_task(uid:str, task:UpdatedTask):
+    if uid not in tasks:
+        return {"Error":"Task doesn't exists"}
     
-#     return tasks[uid]
+    if task.completed != None:
+        print(task.completed)
+        tasks[uid]["completed"] = task.completed
 
-@app.get("/list-task")
-def list_task():
-    return tasks
+    if task.description != None:
+        tasks[uid]["description"] = task.description
+
+    if task.title != None:
+        tasks[uid]["title"] = task.title
+    
+    return tasks[uid]
+
 
 # delete method
-@app.delete("/delete-task/{uid}")
-def delete_task(uid:str):
-    del tasks[uid]
-    return {"Data":"Has been deleted"}
+@app.delete("/delete-task/{id}")
+def delete_task(id:str):
+    for uid in tasks:
+        if uid == id:
+            del tasks[uid]
+            return {"Data":"has been deleted"}
+    return {"Data":"UID doesn't exists"}
+
 
 @app.delete("/delete-task-by-title")
 def delete_task_by_title(title: str = None):
@@ -118,4 +101,4 @@ def delete_task_by_title(title: str = None):
         if tasks[uid]["title"] == title:
             del tasks[uid]
             return {"Data":"Has been deleted"}
-    return {"Data":"can't be found"}
+    return {"Data":"Task title not found"}
